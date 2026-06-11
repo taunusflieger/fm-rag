@@ -25,4 +25,15 @@ public enum CLIOutput {
     public static func answer(_ content: String) -> String {
         "Answer: \(content)"
     }
+
+    public static func normalizedAnswerContent(_ content: String) -> String {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        for prefix in ["model\n", "assistant\n"] {
+            if trimmed.hasPrefix(prefix) {
+                return String(trimmed.dropFirst(prefix.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return trimmed
+    }
 }

@@ -41,6 +41,12 @@ import Testing
     #expect(line == "Answer: Four.")
 }
 
+@Test func normalizesFoundationModelsRolePrefix() {
+    let content = CLIOutput.normalizedAnswerContent("model\nFour.\n")
+
+    #expect(content == "Four.")
+}
+
 private extension CLIArguments.ParseResult {
     var failure: String? {
         if case .failure(let message) = self {

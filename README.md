@@ -56,6 +56,31 @@ Foundation Models: available
 Answer: <model response>
 ```
 
+For grounded questions, start the local Tessera MCP server with the configured
+acceptance data set in another terminal:
+
+```sh
+cd /Users/michael/src/tessera
+cargo make up-dsb
+```
+
+Then run the CLI from this repository:
+
+```sh
+swift run fm-rag "Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?"
+```
+
+The CLI exposes the static Tessera MCP tool catalog to Apple Foundation Models.
+The model decides which Tessera tools to call. Observed tool calls are printed
+before the final answer:
+
+```text
+Question: Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?
+Foundation Models: available
+Tool: <tessera-tool-name> arguments=<compact-json>
+Answer: <model response>
+```
+
 If Foundation Models is unavailable on the current machine, the CLI prints the
 availability reason and exits nonzero before creating a session:
 
@@ -202,8 +227,10 @@ External Knowledge
 Grounded Responses
 ```
 
-Phase 1 currently proves the local Foundation Models path only. MCP-backed
-retrieval and grounded answers are planned for a later change.
+Phase 1 now exposes the local Tessera MCP server through a static Apple
+Foundation Models tool catalog. The bridge uses the Tessera tool names and
+descriptions from the local Tessera source instead of calling MCP `tools/list`
+at runtime.
 
 ---
 

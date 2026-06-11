@@ -1,6 +1,6 @@
 # 2026-06-11-04: Phase 1 Static Tessera Tool Bridge
 
-**Status:** Approved
+**Status:** Implemented
 
 **Created:** 2026-06-11
 
@@ -463,3 +463,71 @@ If the model does not call any Tessera tool for the acceptance question, inspect
 - Do not add dependencies before proving `URLSession` is insufficient.
 - Do not hard-code data-set-specific filters into generic tool implementations.
 - Do not mark this change implemented if the model never calls a Tessera tool during the live acceptance question.
+
+## Implementation Evidence
+
+Preflight and verification ran from `/Users/michael/src/fm-rag` on 2026-06-11:
+
+- `swift --version`
+  - `swift-driver version: 1.167 Apple Swift version 6.4`
+  - target `arm64-apple-macosx27.0.0`
+- `xcrun --show-sdk-path`
+  - `/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`
+- `swift build`
+  - passed
+- `swift test`
+  - passed with 13 Swift Testing tests
+
+Tessera runtime and MCP contract capture:
+
+- Runtime command from `/Users/michael/src/tessera`: `cargo make up-dsb`
+- Server endpoint: `http://127.0.0.1:3000/mcp`
+- Plain probe: `curl --max-time 5 -i http://127.0.0.1:3000/mcp`
+  - returned HTTP `406 Not Acceptable`, confirming the server was reachable and enforcing Streamable HTTP accept headers.
+- `initialize`:
+  - method: `POST`
+  - URL: `http://127.0.0.1:3000/mcp`
+  - headers: `Content-Type: application/json`, `Accept: application/json, text/event-stream`
+  - response: HTTP `200 OK`, `content-type: text/event-stream`, `mcp-session-id: 1fb8ae5c-3cdf-4006-bb58-4a2137230408`
+  - server info: `rmcp` `1.7.0`
+- `notifications/initialized`:
+  - same URL and accept headers with `mcp-session-id`
+  - response: HTTP `202 Accepted`
+- `tools/call` `list_sources`:
+  - response included `dsb_sportordnung_online`
+- `tools/call` `search_rules` with:
+
+```json
+{
+  "query": "welcher mindestimpuls ist für 9mm vorgeschrieben",
+  "limit": 5,
+  "view": "summary",
+  "document_source": "dsb_sportordnung_online"
+}
+```
+
+  - response included a table hit with `table_id: table:dsb_sportordnung_online:f13136507ee3:000076:911a9b0cdcb9`
+- `tools/call` `open_table` with that table ID and `view: "compact"`:
+  - response included the row evidence for `9 mm Luger (9x19)` with Mindestimpuls `250`
+
+Official Apple Foundation Models documentation was refreshed before product edits:
+
+- `https://developer.apple.com/documentation/foundationmodels/tool`
+- `https://developer.apple.com/documentation/foundationmodels/tool/call(arguments:)`
+- `https://developer.apple.com/documentation/foundationmodels/generable`
+- `https://developer.apple.com/documentation/foundationmodels/languagemodelsession/init(model:tools:instructions:)`
+
+Final live acceptance command:
+
+```sh
+swift run fm-rag "Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?"
+```
+
+Final observed output shape:
+
+```text
+Question: Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?
+Foundation Models: available
+Tool: search_rules arguments={"query":"Mindestimpuls 9 mm Luger","view":"summary"}
+Answer: Laut der Sportordnung des Deutschen Schützenbundes beträgt der Mindestimpuls für eine 9-mm-Pistole (Kaliber 9x19) 250 J.
+```
