@@ -43,19 +43,47 @@ swift test
 ### Run
 
 ```sh
-swift run fm-rag "What is in the knowledge base?"
+swift run fm-rag "Answer in one short sentence: what is 2 + 2?"
 ```
 
-The Phase 1 CLI shell echoes the provided question:
+On a supported machine with Apple Intelligence enabled, the Phase 1 CLI checks
+Foundation Models availability, sends the question to the local system language
+model, and prints a non-empty answer:
 
 ```text
-Question: What is in the knowledge base?
+Question: Answer in one short sentence: what is 2 + 2?
+Foundation Models: available
+Answer: <model response>
+```
+
+If Foundation Models is unavailable on the current machine, the CLI prints the
+availability reason and exits nonzero before creating a session:
+
+```text
+Question: Answer in one short sentence: what is 2 + 2?
+Foundation Models: unavailable (<availability reason>)
 ```
 
 ### Xcode
 
 Open the repository root in Xcode. Xcode should load the Swift package and show
 the `fm-rag` executable target or `FMRagCLI` scheme.
+
+When running the CLI from Xcode with the debugger attached, Apple's Foundation
+Models framework may print Biome instrumentation messages such as
+`GenerativeModels.GenerativeFunctions.Instrumentation` or
+`com.apple.biome.access.user` to the Xcode console. Those messages are emitted
+by the Apple framework while it records local instrumentation events. They are
+not produced by this CLI. Application-level generation failures are printed as
+`Foundation Models generation failed: ...`.
+
+If the Xcode debugger output is noisy or generation stalls there while the same
+command works in Terminal, run the scheme without the debugger attached:
+
+1. Open Product > Scheme > Edit Scheme.
+2. Select Run > Info.
+3. Disable Debug executable.
+4. Run the `fm-rag` scheme again.
 
 Generated package state, Xcode user state, derived data, and runtime outputs are
 not committed.
@@ -173,6 +201,9 @@ External Knowledge
        =
 Grounded Responses
 ```
+
+Phase 1 currently proves the local Foundation Models path only. MCP-backed
+retrieval and grounded answers are planned for a later change.
 
 ---
 

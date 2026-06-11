@@ -25,6 +25,22 @@ import Testing
     #expect(parsed.failure == CLIArguments.usage)
 }
 
+@Test func formatsAvailableFoundationModelsStatus() {
+    #expect(CLIOutput.foundationModelsAvailable == "Foundation Models: available")
+}
+
+@Test func formatsUnavailableFoundationModelsStatus() {
+    let line = CLIOutput.foundationModelsUnavailable(reason: "modelNotReady")
+
+    #expect(line == "Foundation Models: unavailable (modelNotReady)")
+}
+
+@Test func formatsFoundationModelsAnswer() {
+    let line = CLIOutput.answer("Four.")
+
+    #expect(line == "Answer: Four.")
+}
+
 private extension CLIArguments.ParseResult {
     var failure: String? {
         if case .failure(let message) = self {

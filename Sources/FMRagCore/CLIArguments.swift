@@ -14,3 +14,15 @@ public enum CLIArguments {
         case failure(String)
     }
 }
+
+public enum CLIOutput {
+    public static let foundationModelsAvailable = "Foundation Models: available"
+
+    public static func foundationModelsUnavailable(reason: String) -> String {
+        "Foundation Models: unavailable (\(reason))"
+    }
+
+    public static func answer(_ content: String) -> String {
+        "Answer: \(content)"
+    }
+}
