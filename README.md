@@ -18,6 +18,58 @@ This repository demonstrates an architecture where Apple Foundation Models act a
 
 ---
 
+## Development
+
+### Requirements
+
+- macOS 26 or newer.
+- Xcode with a macOS 26 SDK or newer.
+- Swift 6.2 or newer.
+
+If the active command-line tools do not point at the required Xcode, prefix Swift
+commands with the matching developer directory:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer swift build
+```
+
+### Build And Test
+
+```sh
+swift build
+swift test
+```
+
+### Run
+
+```sh
+swift run fm-rag "What is in the knowledge base?"
+```
+
+The Phase 1 CLI shell echoes the provided question:
+
+```text
+Question: What is in the knowledge base?
+```
+
+### Xcode
+
+Open the repository root in Xcode. Xcode should load the Swift package and show
+the `fm-rag` executable target or `FMRagCLI` scheme.
+
+Generated package state, Xcode user state, derived data, and runtime outputs are
+not committed.
+
+If Xcode reports a stale SwiftPM manifest error such as `ManifestLoading`
+already existing, close Xcode and remove generated local state before reopening
+the repository root:
+
+```sh
+rm -rf .swiftpm .build runtime
+```
+
+---
+
 ## Why This Project Exists
 
 The AI ecosystem is converging around two separate concerns:
