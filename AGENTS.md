@@ -162,6 +162,7 @@ Required gates must be completed in order:
    completed successfully.
 7. Update implementation status only after all required verification passes, or
    leave it unchanged with a clear blocker report.
+8. When the user requests a commit, update the implementation status
 
 If a required gate fails, stop and report the blocker. Do not continue by
 guessing, substituting nearby commands, or writing partial implementation files.
