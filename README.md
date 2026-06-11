@@ -12,9 +12,31 @@ This project explores a simple question:
 
 > Can Apple Foundation Models be combined with external Retrieval-Augmented Generation (RAG) systems and future MCP ecosystems through tool calling?
 
-The answer appears to be yes.
+## Current Result
 
-This repository demonstrates an architecture where Apple Foundation Models act as a local reasoning engine while external knowledge systems provide authoritative domain expertise.
+The technical integration is proven: Apple Foundation Models can call a static
+Tessera MCP tool catalog through this bridge and receive tool output from the
+local RAG system.
+
+The current Apple Foundation Models runtime is not practically usable for the
+tested DSB RAG workload. Live runs against the DSB data set hit the observed
+4096-token model context limit after ordinary retrieval steps, for example:
+
+```text
+Foundation Models generation failed: Content contains 4100 tokens, which exceeds the maximum allowed context size of 4096.
+```
+
+Trying to hide that limit in the bridge by aggressively truncating or
+interpreting tool output would change the evidence available to the model and
+would invalidate the purpose of this proof of concept. The result of Phase 1 is
+therefore:
+
+- MCP/RAG tool integration: technically demonstrated.
+- DSB-scale grounded answering with the current Apple context limit: not
+  useful enough to continue investigating in this shape.
+
+This repository remains a record of the integration path and the limitation
+found during validation.
 
 ---
 
@@ -80,6 +102,11 @@ Foundation Models: available
 Tool: <tessera-tool-name> arguments=<compact-json>
 Answer: <model response>
 ```
+
+With the DSB data set, this path is expected to be constrained by the observed
+4096-token Foundation Models context limit. A generation failure after a
+successful Tessera tool call is a model-context limitation unless the error
+message indicates a different cause.
 
 If Foundation Models is unavailable on the current machine, the CLI prints the
 availability reason and exits nonzero before creating a session:

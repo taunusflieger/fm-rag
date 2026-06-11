@@ -531,3 +531,28 @@ Foundation Models: available
 Tool: search_rules arguments={"query":"Mindestimpuls 9 mm Luger","view":"summary"}
 Answer: Laut der Sportordnung des Deutschen Schützenbundes beträgt der Mindestimpuls für eine 9-mm-Pistole (Kaliber 9x19) 250 J.
 ```
+
+## Post-Implementation Validation Result
+
+Subsequent live DSB validation proved the static Tessera MCP bridge technically,
+but also showed that the current Apple Foundation Models context size is too
+small for useful DSB-scale RAG in this shape.
+
+Observed failing commands included:
+
+```sh
+swift run fm-rag "Welche Diziplinen darf man mit einer mehrschüssigen Luftpistole schiessen?"
+swift run fm-rag "Welcher Mindestimpuls ist für 9mm vorgeschrieben?"
+```
+
+Observed failure signature:
+
+```text
+Foundation Models generation failed: Content contains 4100 tokens, which exceeds the maximum allowed context size of 4096.
+```
+
+The conclusion is that Step 3 achieved the technical integration objective, but
+the current Apple Foundation Models runtime is not practically useful for the
+tested DSB RAG workload. The bridge should not compensate with domain-specific
+table, index, or retrieval heuristics, because that would change the evidence
+surface and obscure the model/tool suitability result.

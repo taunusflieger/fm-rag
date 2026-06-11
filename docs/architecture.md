@@ -20,6 +20,15 @@ CLI argument
 
 The CLI preserves the original question line, reports Foundation Models availability, prints observed Tessera tool-call trace lines, and prints the generated answer when the model is available.
 
+This boundary proves technical integration, not practical viability for every
+RAG workload. Live validation against the DSB data set showed that ordinary
+retrieval output can exceed the observed Foundation Models 4096-token context
+limit. The bridge therefore must not hide that limitation with domain-specific
+retrieval heuristics or aggressive evidence rewriting. When a live run fails
+with an error such as `Content contains 4100 tokens, which exceeds the maximum
+allowed context size of 4096`, the result is a model-context limitation rather
+than a Tessera integration failure.
+
 If `SystemLanguageModel.default.availability` is unavailable, the CLI prints the documented unavailable reason and exits nonzero before creating a `LanguageModelSession`.
 
 The CLI flushes stdout after the question and availability lines so framework
