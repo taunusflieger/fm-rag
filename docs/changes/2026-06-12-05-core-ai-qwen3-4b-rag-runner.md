@@ -335,6 +335,94 @@ Manual acceptance:
 - `implementation_plan.md` marks this change as `Implemented` only after all
   required verification passes.
 
+## Implementation Attempt Evidence
+
+2026-06-12 implementation attempt:
+
+- `swift --version` from `/Users/michael/src/fm-rag`:
+  - `swift-driver version: 1.167 Apple Swift version 6.4`
+  - target `arm64-apple-macosx27.0.0`
+- `xcrun --show-sdk-path`:
+  - `/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`
+- Pre-edit `swift build` from `/Users/michael/src/fm-rag` succeeded.
+- Pre-edit `swift test` from `/Users/michael/src/fm-rag` succeeded with 13
+  tests.
+- `uv run coreai.model.registry --model-info qwen3-4b --type llm --platform macOS --as-export-args`
+  from `/Users/michael/src/coreai-models` resolved:
+  - `Qwen/Qwen3-4B --compression 4bit --compute-precision float16 --max-context-length 40960`
+- `uv run coreai.llm.export qwen3-4b --platform macOS --dry-run` resolved:
+  - model `Qwen/Qwen3-4B`
+  - platform `macOS`
+  - compression `4bit`
+  - output directory `/Users/michael/src/coreai-models/exports`
+- The expected bundle was absent and was created with
+  `uv run coreai.llm.export qwen3-4b --platform macOS`.
+- `swift run -c release llm-runner --model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic --prompt "Answer in one short sentence: what is 2 + 2?"`
+  succeeded and generated output from the exported bundle.
+
+Core AI source evidence inspected:
+
+- `/Users/michael/src/coreai-models/Package.swift`
+  - product `CoreAILM`
+  - target/module `CoreAILanguageModels`
+  - platform `.macOS("27.0")`
+- `/Users/michael/src/coreai-models/models/qwen3/README.md`
+  - Qwen3 4B is supported on macOS
+  - export and runner commands are documented
+  - README shows `CoreAILanguageModel(resourcesAt:)` with
+    `LanguageModelSession(model:)`
+- `/Users/michael/src/coreai-models/swift/Sources/CoreAILanguageModels/LanguageModel/CoreAILanguageModel.swift`
+  - `public init(resourcesAt url: URL, ...) async throws`
+  - `public struct CoreAILanguageModel: LanguageModel`
+  - `capabilities` currently returns `.guidedGeneration` when
+    `engine.supportsLogits` is true, otherwise no capabilities
+- `/Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic/tokenizer/chat_template.jinja`
+  - contains a `{% if tools %}` branch
+  - renders tool definitions inside `<tools></tools>`
+  - instructs the model to return JSON function calls inside
+    `<tool_call></tool_call>`
+- `/Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic/tokenizer/tokenizer_config.json`
+  - contains `<tool_call>`, `</tool_call>`, `<tool_response>`, and
+    `</tool_response>` token entries
+
+Post-edit checks:
+
+- `swift build` from `/Users/michael/src/fm-rag` succeeded.
+- `swift test` from `/Users/michael/src/fm-rag` succeeded with 21 tests.
+
+Live acceptance blocker:
+
+- Tessera DSB runtime was started with `cargo make up-dsb`.
+- `swift run fm-rag --coreai-model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic "Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?"`
+  reached the Core AI path and printed:
+  - `Question: Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?`
+  - `Model: Core AI qwen3-4b`
+  - `Model path: /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic`
+- The run failed before any Tessera tool call:
+  - `Core AI generation failed: The selected model does not support tool calling. Consider trying again with a different model.`
+- A narrow local wrapper was added in `FMRagCLI` to delegate to
+  `CoreAILanguageModel` while advertising `.toolCalling` to Foundation Models.
+- After that wrapper, the same live command passed the unsupported-capability
+  gate but still failed before any Tessera tool trace:
+  - `Core AI generation failed: Session ended without producing a response.`
+
+Current diagnosis:
+
+- The exported `qwen3-4b` bundle has tokenizer/template support for Qwen-style
+  tool calls.
+- The local Core AI Foundation Models adapter does not advertise `.toolCalling`
+  from `CoreAILanguageModel.capabilities`.
+- Advertising `.toolCalling` is not sufficient by itself. The Core AI executor
+  currently routes generated text and reasoning events, but does not parse
+  generated `<tool_call>` blocks and emit Foundation Models
+  `LanguageModelExecutorGenerationChannel.toolCalls(...)` events.
+- Upstream tracking issue:
+  [`apple/coreai-models#28`](https://github.com/apple/coreai-models/issues/28).
+
+This change must remain `Approved`, not `Implemented`, until the selected Core
+AI language model can participate in Foundation Models tool calling or a
+separate approved change defines a different architecture.
+
 ## Known Failure Signatures
 
 - `package 'coreai-models' is using Swift tools version 6.0.0 but the installed version is ...`

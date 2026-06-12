@@ -18,6 +18,12 @@ The technical integration is proven: Apple Foundation Models can call a static
 Tessera MCP tool catalog through this bridge and receive tool output from the
 local RAG system.
 
+The CLI can also select a local Core AI `qwen3-4b` bundle exported from the
+adjacent `coreai-models` checkout. Live acceptance for using that model with the
+same Tessera tool bridge is currently blocked: the exported bundle contains
+Qwen3 tool-call template signals, but the local Core AI executor does not yet
+emit Foundation Models tool-call events from generated `<tool_call>` text.
+
 The current Apple Foundation Models runtime is not practically usable for the
 tested DSB RAG workload. Live runs against the DSB data set hit the observed
 4096-token model context limit after ordinary retrieval steps, for example:
@@ -44,9 +50,11 @@ found during validation.
 
 ### Requirements
 
-- macOS 26 or newer.
-- Xcode with a macOS 26 SDK or newer.
+- macOS 27 or newer.
+- Xcode with a macOS 27 SDK or newer.
 - Swift 6.2 or newer.
+- An adjacent `/Users/michael/src/coreai-models` checkout when using
+  `--coreai-model`.
 
 If the active command-line tools do not point at the required Xcode, prefix Swift
 commands with the matching developer directory:
@@ -107,6 +115,68 @@ With the DSB data set, this path is expected to be constrained by the observed
 4096-token Foundation Models context limit. A generation failure after a
 successful Tessera tool call is a model-context limitation unless the error
 message indicates a different cause.
+
+To test the same RAG bridge with Core AI `qwen3-4b`, export the supported model
+bundle from the adjacent checkout:
+
+```sh
+cd /Users/michael/src/coreai-models
+uv run coreai.llm.export qwen3-4b --platform macOS
+```
+
+Validate the bundle with the Core AI reference runner:
+
+```sh
+swift run -c release llm-runner \
+  --model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic \
+  --prompt "Answer in one short sentence: what is 2 + 2?"
+```
+
+Then run the RAG CLI with the explicit Core AI model path:
+
+```sh
+swift run fm-rag \
+  --coreai-model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic \
+  "Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?"
+```
+
+Expected output starts by identifying the selected local model and bundle path,
+then prints observed Tessera tool calls before the final answer:
+
+```text
+Question: Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?
+Model: Core AI qwen3-4b
+Model path: /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic
+Tool: <tessera-tool-name> arguments=<compact-json>
+Answer: <model response>
+```
+
+During the current implementation attempt, the first run reached the Core AI
+model path and failed before any Tessera tool call because the local
+`CoreAILanguageModel` adapter did not advertise `.toolCalling` through
+Foundation Models:
+
+```text
+Core AI generation failed: The selected model does not support tool calling. Consider trying again with a different model.
+```
+
+After adding a narrow local capability bridge, Foundation Models accepted the
+session but the run still ended before any Tessera tool trace:
+
+```text
+Core AI generation failed: Session ended without producing a response.
+```
+
+The remaining gap is in the Core AI executor layer: generated Qwen3
+`<tool_call>` text must be parsed and emitted as Foundation Models
+`toolCalls(...)` channel events before the standard `LanguageModelSession`
+tool loop can call Tessera.
+
+The upstream Core AI tracking issue is
+[`apple/coreai-models#28`](https://github.com/apple/coreai-models/issues/28).
+
+Do not work around that limitation by hardcoding retrieval, bypassing the
+Tessera MCP client, or hiding retrieval orchestration in the CLI.
 
 If Foundation Models is unavailable on the current machine, the CLI prints the
 availability reason and exits nonzero before creating a session:

@@ -5,12 +5,15 @@ This document records the current technical architecture for the Phase 1 command
 ## Current Boundary
 
 The current implementation proves the local Foundation Models path with a
-static Tessera MCP tool bridge:
+static Tessera MCP tool bridge and adds an explicit local Core AI model loading
+path:
 
 ```text
 CLI argument
   -> FMRagCLI
+  -> model selection
   -> SystemLanguageModel.default availability check
+     or CoreAILanguageModel(resourcesAt:) bundle load
   -> LanguageModelSession with static Tessera tools
   -> model-selected tool calls
   -> Tessera MCP Streamable HTTP endpoint
@@ -18,7 +21,10 @@ CLI argument
   -> CLI output
 ```
 
-The CLI preserves the original question line, reports Foundation Models availability, prints observed Tessera tool-call trace lines, and prints the generated answer when the model is available.
+The CLI preserves the original question line, reports Foundation Models
+availability for the default system-model path or the Core AI model name and
+bundle path for `--coreai-model`, prints observed Tessera tool-call trace lines,
+and prints the generated answer when the selected model can run the session.
 
 This boundary proves technical integration, not practical viability for every
 RAG workload. Live validation against the DSB data set showed that ordinary
@@ -30,6 +36,40 @@ allowed context size of 4096`, the result is a model-context limitation rather
 than a Tessera integration failure.
 
 If `SystemLanguageModel.default.availability` is unavailable, the CLI prints the documented unavailable reason and exits nonzero before creating a `LanguageModelSession`.
+
+If `--coreai-model <path>` is supplied, the CLI validates that the path exists
+and is a directory before loading a model. The Core AI path loads
+`CoreAILanguageModel(resourcesAt:)` from the adjacent `coreai-models` checkout
+and creates a `LanguageModelSession` with the same Tessera tools and prompt
+instructions as the default Foundation Models path. The CLI currently wraps the
+Core AI model in a narrow capability bridge because the exported Qwen3 tokenizer
+has tool-call template support, while the local Core AI adapter does not
+advertise `.toolCalling` through Foundation Models.
+
+Live acceptance with the exported `qwen3-4b` bundle is still blocked. Without
+the bridge, Foundation Models reports:
+
+```text
+The selected model does not support tool calling. Consider trying again with a different model.
+```
+
+With the capability bridge, the session is accepted but ends before any Tessera
+tool trace:
+
+```text
+Session ended without producing a response.
+```
+
+The remaining architectural gap is that the Core AI executor only routes
+generated text and reasoning events today. It must parse generated Qwen3
+`<tool_call>` blocks and emit Foundation Models `toolCalls(...)` channel events
+before `LanguageModelSession` can execute the registered Tessera tools.
+This is tracked upstream as
+[`apple/coreai-models#28`](https://github.com/apple/coreai-models/issues/28).
+
+The CLI must not compensate for that model capability gap by hardcoding
+retrieval, bypassing the Tessera MCP client, or hiding retrieval orchestration
+outside model-selected tool calls.
 
 The CLI flushes stdout after the question and availability lines so framework
 stderr output from Foundation Models does not reorder the user-visible status
@@ -51,6 +91,19 @@ The implementation uses only the official Apple-documented symbols needed for th
 - `LanguageModelSession.init(model:tools:instructions:)`
 - `LanguageModelSession.respond(to:options:)`
 - `LanguageModelSession.Response.content`
+
+The Core AI integration is grounded in the local `/Users/michael/src/coreai-models`
+checkout:
+
+- `Package.swift` defines product `CoreAILM`, module target
+  `CoreAILanguageModels`, and platform `.macOS("27.0")`.
+- `models/qwen3/README.md` documents Qwen3 4B as supported on macOS and shows
+  loading a Core AI language model through Foundation Models.
+- `swift/Sources/CoreAILanguageModels/LanguageModel/CoreAILanguageModel.swift`
+  defines `CoreAILanguageModel(resourcesAt:)` and conforms the type to
+  Foundation Models `LanguageModel`.
+- The exported `qwen3_4b_4bit_dynamic` tokenizer includes `<tool_call>` and
+  `<tool_response>` tokens and a `chat_template.jinja` branch for `tools`.
 
 The session is created with a static Apple `Tool` for each Tessera MCP tool
 registered in `/Users/michael/src/tessera/server/src/server.rs`. The tool names
@@ -87,6 +140,6 @@ not change the current architecture boundary.
 
 ## Targets
 
-- `FMRagCLI` owns process exit behavior, Foundation Models availability checks, session creation, and live model calls.
+- `FMRagCLI` owns process exit behavior, model-provider selection, Foundation Models availability checks, Core AI model bundle loading, session creation, and live model calls.
 - `FMRagCore` owns deterministic CLI helpers, the static Tessera tool catalog, MCP transport, tool formatting, and prompt assembly.
 - `FMRagCoreTests` tests argument parsing, output formatting, static catalog coverage, MCP request encoding, response decoding, allowed-tool validation, and trace formatting without calling the live model or live Tessera.
