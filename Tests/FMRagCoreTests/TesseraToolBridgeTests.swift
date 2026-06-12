@@ -8,8 +8,8 @@ import Testing
 
     #expect(names == [
         "list_sources",
-        "search_rules",
         "search_exact",
+        "search_rules",
         "search_identifiers",
         "count_identifiers",
         "count_text_matches",
@@ -29,6 +29,11 @@ import Testing
     #expect(instructions.contains("tool names, descriptions, and argument schemas"))
     #expect(instructions.contains("capability catalog"))
     #expect(instructions.contains("Do not assume hidden tool capabilities"))
+    #expect(instructions.contains("do not finish the turn before making at least one Tessera tool call"))
+    #expect(instructions.contains("do not answer from table-of-contents rows, index rows, headings, or heading-only hits"))
+    #expect(instructions.contains("Do not translate weapon names"))
+    #expect(instructions.contains("first call search_exact with the exact weapon or equipment phrase"))
+    #expect(instructions.contains("try both the exact literal search path"))
 }
 
 @Test func clientRejectsUnknownToolBeforeHTTPRequest() async throws {
@@ -109,6 +114,48 @@ import Testing
     #expect(output.contains("tool: open_table"))
     #expect(output.contains("table_id: table-1"))
     #expect(output.contains("<truncated>"))
+}
+
+@Test func formatterMarksSearchResultsAsCandidateEvidence() {
+    let output = TesseraToolResponseFormatter.format(
+        toolName: "search_rules",
+        arguments: ["query": .string("mehrschuessige luftpistole")],
+        response: .object([
+            "structuredContent": .object([
+                "results": .array([
+                    .object([
+                        "table_id": .string("table-1"),
+                        "artifact_type": .string("table"),
+                        "snippet": .string("10 m Mehrschuessige Luftpistole"),
+                    ]),
+                ]),
+            ]),
+        ])
+    )
+
+    #expect(output.contains("Search results are candidate evidence"))
+    #expect(output.contains("use get_context for returned chunk_id values"))
+    #expect(!output.contains("10 m Mehrschuessige Luftpistole"))
+}
+
+@Test func formatterMarksNavigationTablesAsInsufficientEvidence() {
+    let output = TesseraToolResponseFormatter.format(
+        toolName: "open_table",
+        arguments: ["table_id": .string("table-of-contents")],
+        response: .object([
+            "structuredContent": .object([
+                "found": .bool(true),
+                "table": .object([
+                    "table_id": .string("table-of-contents"),
+                    "markdown": .string("| 2.12 | 10 m Mehrschuessige Luftpistole | S. 12 |\n| --- | --- | --- |"),
+                ]),
+            ]),
+        ])
+    )
+
+    #expect(output.contains("evidence_warning"))
+    #expect(output.contains("Do not use it as final evidence"))
+    #expect(!output.contains("10 m Mehrschuessige Luftpistole"))
 }
 
 @Test func traceFormatsObservedToolCalls() async {

@@ -67,7 +67,10 @@ private func answer(_ command: CLIArguments.Command) async {
                 tools: tools,
                 instructions: TesseraPromptAssembly.instructions
             )
-            let response = try await session.respond(to: question)
+            let response = try await session.respond(
+                to: question,
+                options: GenerationOptions(maximumResponseTokens: 768)
+            )
             await printAnswer(response.content, trace: trace, errorPrefix: "Core AI generation failed")
         }
     } catch {

@@ -10,33 +10,6 @@ struct EmptyArguments: TesseraToolArguments {
     }
 }
 
-struct FilterArguments: Sendable {
-    var source: String?
-    var system: String?
-    var artifact_layer: String?
-    var domain: String?
-    var module: String?
-    var document_source: String?
-    var authority: String?
-    var version: String?
-    var document_id: String?
-    var page: Int?
-
-    func add(to arguments: [String: JSONValue]) -> [String: JSONValue] {
-        arguments
-            .adding("source", source)
-            .adding("system", system)
-            .adding("artifact_layer", artifact_layer)
-            .adding("domain", domain)
-            .adding("module", module)
-            .adding("document_source", document_source)
-            .adding("authority", authority)
-            .adding("version", version)
-            .adding("document_id", document_id)
-            .adding("page", page)
-    }
-}
-
 struct TesseraToolExecutor: Sendable {
     let name: String
     let client: TesseraMCPClient
@@ -57,13 +30,12 @@ public enum TesseraFoundationToolFactory {
     public static func makeTools(client: TesseraMCPClient, trace: ToolCallTrace) -> [any Tool] {
         [
             ListSourcesTool(client: client, trace: trace),
-            SearchRulesTool(client: client, trace: trace),
             SearchExactTool(client: client, trace: trace),
+            SearchRulesTool(client: client, trace: trace),
             SearchIdentifiersTool(client: client, trace: trace),
             CountIdentifiersTool(client: client, trace: trace),
             CountTextMatchesTool(client: client, trace: trace),
             SearchTablesTool(client: client, trace: trace),
-            OpenChunkTool(client: client, trace: trace),
             OpenTableTool(client: client, trace: trace),
             GetContextTool(client: client, trace: trace),
             FindRuleNumberTool(client: client, trace: trace),
@@ -111,36 +83,11 @@ struct SearchRulesTool: Tool {
         let limit: Int?
         @Guide(description: "Response view: full or summary")
         let view: String?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            filters.add(to: ["query": .string(query)])
+            ["query": .string(query)]
                 .adding("limit", limit)
                 .adding("view", view)
-        }
-
-        private var filters: FilterArguments {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
         }
     }
 
@@ -151,7 +98,7 @@ struct SearchRulesTool: Tool {
 
 struct SearchExactTool: Tool {
     let name = "search_exact"
-    let description = "Search indexed text for exact words or phrases with FTS5/BM25. Use this when the user supplies distinctive terms, identifiers, names, calibers, or quoted phrases that should appear literally."
+    let description = "Search indexed text for exact words or phrases with FTS5/BM25. Use this when the user supplies distinctive terms, identifiers, equipment names, calibers, or quoted phrases that should appear literally."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -166,33 +113,11 @@ struct SearchExactTool: Tool {
         let limit: Int?
         @Guide(description: "Response view: full or summary")
         let view: String?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: ["term": .string(term)])
-            .adding("limit", limit)
-            .adding("view", view)
+            ["term": .string(term)]
+                .adding("limit", limit)
+                .adding("view", view)
         }
     }
 
@@ -224,36 +149,14 @@ struct SearchIdentifiersTool: Tool {
         let relation_limit: Int?
         @Guide(description: "Response view: full or summary")
         let view: String?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: ["query": .string(query)])
-            .adding("limit", limit)
-            .adding("kind", kind)
-            .adding("include_related", include_related)
-            .adding("relation_limit", relation_limit)
-            .adding("view", view)
+            ["query": .string(query)]
+                .adding("limit", limit)
+                .adding("kind", kind)
+                .adding("include_related", include_related)
+                .adding("relation_limit", relation_limit)
+                .adding("view", view)
         }
     }
 
@@ -283,36 +186,14 @@ struct CountIdentifiersTool: Tool {
         let distinct: String?
         @Guide(description: "Maximum number of sample identifiers")
         let sample_limit: Int?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: [:])
-            .adding("query", query)
-            .adding("match_mode", match_mode)
-            .adding("kind", kind)
-            .adding("distinct", distinct)
-            .adding("sample_limit", sample_limit)
+            [String: JSONValue]()
+                .adding("query", query)
+                .adding("match_mode", match_mode)
+                .adding("kind", kind)
+                .adding("distinct", distinct)
+                .adding("sample_limit", sample_limit)
         }
     }
 
@@ -340,34 +221,12 @@ struct CountTextMatchesTool: Tool {
         let count_unit: String?
         @Guide(description: "Maximum number of sample chunks")
         let sample_limit: Int?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: ["term": .string(term)])
-            .adding("match_mode", match_mode)
-            .adding("count_unit", count_unit)
-            .adding("sample_limit", sample_limit)
+            ["term": .string(term)]
+                .adding("match_mode", match_mode)
+                .adding("count_unit", count_unit)
+                .adding("sample_limit", sample_limit)
         }
     }
 
@@ -378,7 +237,7 @@ struct CountTextMatchesTool: Tool {
 
 struct SearchTablesTool: Tool {
     let name = "search_tables"
-    let description = "Search table artifacts by caption, header, cell, or table text. Use this when the answer may be in a table, especially concrete values, rows, columns, calibers, measurements, limits, or mappings. Use open_table before final answers that depend on table rows or cells."
+    let description = "Search table artifacts by caption, header, cell, or table text. Use this when the answer may be in a table, especially concrete values, rows, columns, calibers, measurements, limits, equipment specifications, or equipment-to-competition mappings. Use open_table before final answers that depend on table rows or cells."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -393,33 +252,11 @@ struct SearchTablesTool: Tool {
         let limit: Int?
         @Guide(description: "Response view: full or summary")
         let view: String?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: ["query": .string(query)])
-            .adding("limit", limit)
-            .adding("view", view)
+            ["query": .string(query)]
+                .adding("limit", limit)
+                .adding("view", view)
         }
     }
 
@@ -535,33 +372,11 @@ struct FindRuleNumberTool: Tool {
         let limit: Int?
         @Guide(description: "Include descendant section numbers")
         let include_descendants: Bool?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: ["number": .string(number)])
-            .adding("limit", limit)
-            .adding("include_descendants", include_descendants)
+            ["number": .string(number)]
+                .adding("limit", limit)
+                .adding("include_descendants", include_descendants)
         }
     }
 
@@ -591,36 +406,14 @@ struct TraceRequirementTool: Tool {
         let limit: Int?
         @Guide(description: "Include unresolved link references")
         let include_unresolved: Bool?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: [:])
-            .adding("requirement_id", requirement_id)
-            .adding("chunk_id", chunk_id)
-            .adding("direction", direction)
-            .adding("limit", limit)
-            .adding("include_unresolved", include_unresolved)
+            [String: JSONValue]()
+                .adding("requirement_id", requirement_id)
+                .adding("chunk_id", chunk_id)
+                .adding("direction", direction)
+                .adding("limit", limit)
+                .adding("include_unresolved", include_unresolved)
         }
     }
 
@@ -644,32 +437,10 @@ struct FindModuleTool: Tool {
         let module_name: String
         @Guide(description: "Maximum number of results")
         let limit: Int?
-        let source: String?
-        let system: String?
-        let artifact_layer: String?
-        let domain: String?
-        let module: String?
-        let document_source: String?
-        let authority: String?
-        let version: String?
-        let document_id: String?
-        let page: Int?
 
         var mcpArguments: [String: JSONValue] {
-            FilterArguments(
-                source: source,
-                system: system,
-                artifact_layer: artifact_layer,
-                domain: domain,
-                module: module,
-                document_source: document_source,
-                authority: authority,
-                version: version,
-                document_id: document_id,
-                page: page
-            )
-            .add(to: ["module_name": .string(module_name)])
-            .adding("limit", limit)
+            ["module_name": .string(module_name)]
+                .adding("limit", limit)
         }
     }
 

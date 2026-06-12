@@ -61,6 +61,14 @@ The Tessera system instructions make tool selection capability-driven: the
 model is told to inspect the available tool names, descriptions, and argument
 schemas as its capability catalog before choosing a tool. This keeps retrieval
 selection inside the model/tool loop without hardcoded Swift-side orchestration.
+Core AI runs pass `GenerationOptions(maximumResponseTokens: 768)` because the
+default 512-token budget can end Qwen3 4B after tool use before any plain
+assistant response is emitted. A 1024-token budget is not used because local
+testing hit the Core AI engine failure
+`Engine not returned after drain() — tokenSequence Task stuck?`.
+For deeper RAG questions that require exact search, context expansion, table
+search, and table verification, Qwen3 4B remains model-limited and can still
+stop early or answer from insufficient evidence.
 
 The CLI must not compensate for model-specific tool-selection weaknesses by
 hardcoding retrieval, bypassing the Tessera MCP client, or hiding retrieval

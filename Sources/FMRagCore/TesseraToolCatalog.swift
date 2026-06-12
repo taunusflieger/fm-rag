@@ -15,12 +15,12 @@ public enum TesseraToolCatalog {
             description: "Discover configured sources, source metadata, available filter facets, status, and configuration errors. Use this to understand what collections and filters exist; it does not search document content."
         ),
         .init(
-            name: "search_rules",
-            description: "Search rule and knowledge text by meaning for intent-oriented questions. Use this when the user asks in natural language and you need relevant passages before deciding whether more specific lookup is needed."
+            name: "search_exact",
+            description: "Search indexed text for exact words or phrases with FTS5/BM25. Use this when the user supplies distinctive terms, identifiers, equipment names, calibers, or quoted phrases that should appear literally."
         ),
         .init(
-            name: "search_exact",
-            description: "Search indexed text for exact words or phrases with FTS5/BM25. Use this when the user supplies distinctive terms, identifiers, names, calibers, or quoted phrases that should appear literally."
+            name: "search_rules",
+            description: "Search rule and knowledge text by meaning for intent-oriented questions. Use this when the user asks in natural language and you need relevant passages before deciding whether more specific lookup is needed."
         ),
         .init(
             name: "search_identifiers",
@@ -36,7 +36,7 @@ public enum TesseraToolCatalog {
         ),
         .init(
             name: "search_tables",
-            description: "Search table artifacts by caption, header, cell, or table text. Use this when the answer may be in a table, especially concrete values, rows, columns, calibers, measurements, limits, or mappings. Use open_table before final answers that depend on table rows or cells."
+            description: "Search table artifacts by caption, header, cell, or table text. Use this when the answer may be in a table, especially concrete values, rows, columns, calibers, measurements, limits, equipment specifications, or equipment-to-competition mappings. Use open_table before final answers that depend on table rows or cells."
         ),
         .init(
             name: "open_chunk",

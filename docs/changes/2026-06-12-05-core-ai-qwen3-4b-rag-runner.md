@@ -462,9 +462,30 @@ Live Core AI acceptance after the upstream fix and the capability-catalog prompt
   system instructions require the model to inspect available tool names,
   descriptions, and argument schemas as the Tessera capability catalog before
   selecting a tool.
-- Final checks after the prompt and tool-description update:
+- 2026-06-12 robustness follow-up for the prompt
+  `Nutze Tessera tools. Welche Diziplinen darf man mit einer mehrschüssigen Luftpistole schießen?`:
+  - With the default Core AI response budget, the model called
+    `search_rules arguments={"query":"mehrschüssige Luftpistole","view":"summary"}`
+    and then failed with `Session ended without producing a response.`
+  - Raising the Core AI response budget to 1024 was rejected because it triggered
+    `CoreAIPipelinedEngine.swift:149: Fatal error: Engine not returned after drain() — tokenSequence Task stuck?`
+  - The Core AI CLI path now uses
+    `GenerationOptions(maximumResponseTokens: 768)`.
+  - The first 768-token run produced a final answer, but the answer was rejected
+    because it inferred allowed disciplines from heading/table-of-contents
+    evidence instead of opening the relevant rule context and equipment table.
+- The prompt and compact search-hit formatting were tightened so equipment-to-
+  discipline questions must not be answered from table-of-contents rows, index
+  rows, headings, or heading-only hits.
+- The same prompt still did not reach the correct Pistolentabelle-backed answer
+  reliably with Qwen3 4B. Later live runs either stopped before a response,
+  opened only navigation evidence, or produced incomplete/factually wrong
+  answers. This remains a model/runtime suitability limit unless a separate
+  approved change adds deterministic retrieval planning outside the model.
+- Final checks after the prompt, tool-description, search-hit formatting, and
+  response-budget update:
   - `swift build` from `/Users/michael/src/fm-rag` succeeded.
-  - `swift test` from `/Users/michael/src/fm-rag` succeeded with 22 tests.
+  - `swift test` from `/Users/michael/src/fm-rag` succeeded with 24 tests.
 
 ## Known Failure Signatures
 

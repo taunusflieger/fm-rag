@@ -160,6 +160,12 @@ The Tessera system instructions require the model to inspect the available tool
 names, descriptions, and argument schemas as a capability catalog before
 selecting tools.
 
+Core AI runs use a 768-token response budget. The lower default can end after
+tool use without producing plain response text on Qwen3 4B, while a larger 1024
+budget triggered a local Core AI engine drain failure during testing.
+Qwen3 4B remains unreliable for deeper autonomous RAG plans that require
+several dependent tool calls and table verification.
+
 If Foundation Models is unavailable on the current machine, the CLI prints the
 availability reason and exits nonzero before creating a session:
 
