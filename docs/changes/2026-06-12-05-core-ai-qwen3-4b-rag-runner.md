@@ -1,6 +1,6 @@
 # 2026-06-12-05: Core AI Qwen3 4B RAG Runner
 
-**Status:** Approved
+**Status:** Implemented
 
 **Created:** 2026-06-12
 
@@ -385,12 +385,12 @@ Core AI source evidence inspected:
   - contains `<tool_call>`, `</tool_call>`, `<tool_response>`, and
     `</tool_response>` token entries
 
-Post-edit checks:
+Post-edit checks from the initial implementation attempt:
 
 - `swift build` from `/Users/michael/src/fm-rag` succeeded.
 - `swift test` from `/Users/michael/src/fm-rag` succeeded with 21 tests.
 
-Live acceptance blocker:
+Initial live acceptance blocker:
 
 - Tessera DSB runtime was started with `cargo make up-dsb`.
 - `swift run fm-rag --coreai-model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic "Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?"`
@@ -406,7 +406,7 @@ Live acceptance blocker:
   gate but still failed before any Tessera tool trace:
   - `Core AI generation failed: Session ended without producing a response.`
 
-Current diagnosis:
+Initial diagnosis before the upstream Core AI fix:
 
 - The exported `qwen3-4b` bundle has tokenizer/template support for Qwen-style
   tool calls.
@@ -419,9 +419,52 @@ Current diagnosis:
 - Upstream tracking issue:
   [`apple/coreai-models#28`](https://github.com/apple/coreai-models/issues/28).
 
-This change must remain `Approved`, not `Implemented`, until the selected Core
-AI language model can participate in Foundation Models tool calling or a
-separate approved change defines a different architecture.
+2026-06-12 follow-up after pulling `apple/coreai-models` commit
+`bffc38f Swift lint on Package.swift and add Package.resolved for remote URL (#26)`:
+
+- `CoreAILanguageModel.capabilities` now includes `.toolCalling` when
+  `CoreAIExecutor.detectToolCallMarkers(using:)` finds tokenizer tool-call
+  markers.
+- `swift/Sources/CoreAILanguageModels/ToolCallParser.swift` parses generated
+  tool-call blocks such as `<tool_call>...</tool_call>`.
+- `CoreAIExecutor` now sends Foundation Models
+  `LanguageModelExecutorGenerationChannel.toolCalls(...)` events.
+- The temporary local `ToolCallingCoreAIModel` wrapper in `FMRagCLI` was removed.
+  The CLI now uses `CoreAILanguageModel(resourcesAt:)` directly.
+- A stale SwiftPM `xgrammar` checkout/header cache caused an initial build
+  failure:
+  - `out-of-line definition of 'TraverseDraftTree' does not match any declaration in 'xgrammar::GrammarMatcher'`
+  - Removing the generated `.build/checkouts/xgrammar`,
+    `.build/repositories/xgrammar-*`, and
+    `.build/out/Products/Debug/include/xgrammar` paths let SwiftPM recreate a
+    consistent checkout.
+- `swift build` from `/Users/michael/src/fm-rag` succeeded after the cache reset.
+- `swift test` from `/Users/michael/src/fm-rag` succeeded with 21 tests.
+
+Live Core AI acceptance after the upstream fix and the capability-catalog prompt:
+
+- Tessera DSB runtime was started with `cargo make up-dsb`.
+- Direct tool smoke:
+  - Command:
+    `swift run fm-rag --coreai-model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic "List the available sources using the provided tool."`
+  - Output included:
+    - `Model: Core AI qwen3-4b`
+    - `Tool: list_sources arguments={}`
+    - non-empty answer listing configured sources
+- DSB RAG smoke:
+  - Command:
+    `swift run fm-rag --coreai-model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic "Nutze Tessera tools. Welcher Mindestimpuls ist fuer 9 mm Luger vorgeschrieben?"`
+  - Output included:
+    - `Model: Core AI qwen3-4b`
+    - `Tool: search_rules arguments={"query":"minimum impulse 9 mm Luger","view":"summary"}`
+    - answer with Mindestimpuls value `250`
+- The accepted prompt does not include a direct matching search phrase. The
+  system instructions require the model to inspect available tool names,
+  descriptions, and argument schemas as the Tessera capability catalog before
+  selecting a tool.
+- Final checks after the prompt and tool-description update:
+  - `swift build` from `/Users/michael/src/fm-rag` succeeded.
+  - `swift test` from `/Users/michael/src/fm-rag` succeeded with 22 tests.
 
 ## Known Failure Signatures
 

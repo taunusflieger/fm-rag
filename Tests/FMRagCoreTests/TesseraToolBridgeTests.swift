@@ -23,6 +23,14 @@ import Testing
     ])
 }
 
+@Test func promptRequiresToolCapabilityInspection() {
+    let instructions = TesseraPromptAssembly.instructions
+
+    #expect(instructions.contains("tool names, descriptions, and argument schemas"))
+    #expect(instructions.contains("capability catalog"))
+    #expect(instructions.contains("Do not assume hidden tool capabilities"))
+}
+
 @Test func clientRejectsUnknownToolBeforeHTTPRequest() async throws {
     let transport = MockHTTPTransport(responses: [])
     let client = TesseraMCPClient(transport: transport)

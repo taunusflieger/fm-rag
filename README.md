@@ -19,10 +19,9 @@ Tessera MCP tool catalog through this bridge and receive tool output from the
 local RAG system.
 
 The CLI can also select a local Core AI `qwen3-4b` bundle exported from the
-adjacent `coreai-models` checkout. Live acceptance for using that model with the
-same Tessera tool bridge is currently blocked: the exported bundle contains
-Qwen3 tool-call template signals, but the local Core AI executor does not yet
-emit Foundation Models tool-call events from generated `<tool_call>` text.
+adjacent `coreai-models` checkout. With the updated Core AI Foundation Models
+adapter, the same Tessera tool bridge can run against that local bundle and
+print observed Tessera tool calls.
 
 The current Apple Foundation Models runtime is not practically usable for the
 tested DSB RAG workload. Live runs against the DSB data set hit the observed
@@ -137,46 +136,29 @@ Then run the RAG CLI with the explicit Core AI model path:
 ```sh
 swift run fm-rag \
   --coreai-model /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic \
-  "Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?"
+  "Nutze Tessera tools. Welcher Mindestimpuls ist fuer 9 mm Luger vorgeschrieben?"
 ```
 
 Expected output starts by identifying the selected local model and bundle path,
 then prints observed Tessera tool calls before the final answer:
 
 ```text
-Question: Welcher Mindestimpuls ist für 9 mm Luger vorgeschrieben?
+Question: Nutze Tessera tools. Welcher Mindestimpuls ist fuer 9 mm Luger vorgeschrieben?
 Model: Core AI qwen3-4b
 Model path: /Users/michael/src/coreai-models/exports/qwen3_4b_4bit_dynamic
 Tool: <tessera-tool-name> arguments=<compact-json>
 Answer: <model response>
 ```
 
-During the current implementation attempt, the first run reached the Core AI
-model path and failed before any Tessera tool call because the local
-`CoreAILanguageModel` adapter did not advertise `.toolCalling` through
-Foundation Models:
-
-```text
-Core AI generation failed: The selected model does not support tool calling. Consider trying again with a different model.
-```
-
-After adding a narrow local capability bridge, Foundation Models accepted the
-session but the run still ended before any Tessera tool trace:
-
-```text
-Core AI generation failed: Session ended without producing a response.
-```
-
-The remaining gap is in the Core AI executor layer: generated Qwen3
-`<tool_call>` text must be parsed and emitted as Foundation Models
-`toolCalls(...)` channel events before the standard `LanguageModelSession`
-tool loop can call Tessera.
-
-The upstream Core AI tracking issue is
+The upstream Core AI tool-calling fix was tracked as
 [`apple/coreai-models#28`](https://github.com/apple/coreai-models/issues/28).
+The CLI uses `CoreAILanguageModel(resourcesAt:)` directly; it does not hardcode
+retrieval, bypass the Tessera MCP client, or hide retrieval orchestration in the
+CLI.
 
-Do not work around that limitation by hardcoding retrieval, bypassing the
-Tessera MCP client, or hiding retrieval orchestration in the CLI.
+The Tessera system instructions require the model to inspect the available tool
+names, descriptions, and argument schemas as a capability catalog before
+selecting tools.
 
 If Foundation Models is unavailable on the current machine, the CLI prints the
 availability reason and exits nonzero before creating a session:

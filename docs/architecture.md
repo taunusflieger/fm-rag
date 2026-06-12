@@ -41,35 +41,30 @@ If `--coreai-model <path>` is supplied, the CLI validates that the path exists
 and is a directory before loading a model. The Core AI path loads
 `CoreAILanguageModel(resourcesAt:)` from the adjacent `coreai-models` checkout
 and creates a `LanguageModelSession` with the same Tessera tools and prompt
-instructions as the default Foundation Models path. The CLI currently wraps the
-Core AI model in a narrow capability bridge because the exported Qwen3 tokenizer
-has tool-call template support, while the local Core AI adapter does not
-advertise `.toolCalling` through Foundation Models.
-
-Live acceptance with the exported `qwen3-4b` bundle is still blocked. Without
-the bridge, Foundation Models reports:
-
-```text
-The selected model does not support tool calling. Consider trying again with a different model.
-```
-
-With the capability bridge, the session is accepted but ends before any Tessera
-tool trace:
-
-```text
-Session ended without producing a response.
-```
-
-The remaining architectural gap is that the Core AI executor only routes
-generated text and reasoning events today. It must parse generated Qwen3
-`<tool_call>` blocks and emit Foundation Models `toolCalls(...)` channel events
-before `LanguageModelSession` can execute the registered Tessera tools.
-This is tracked upstream as
+instructions as the default Foundation Models path. The current local
+`coreai-models` checkout advertises `.toolCalling` for exported bundles whose
+tokenizer exposes tool-call markers and routes generated tool-call markup to
+Foundation Models `toolCalls(...)` channel events. The upstream tool-calling
+fix was tracked as
 [`apple/coreai-models#28`](https://github.com/apple/coreai-models/issues/28).
 
-The CLI must not compensate for that model capability gap by hardcoding
-retrieval, bypassing the Tessera MCP client, or hiding retrieval orchestration
-outside model-selected tool calls.
+Live Core AI RAG acceptance has two observed modes:
+
+- A direct tool prompt such as `List the available sources using the provided
+  tool.` calls `list_sources` and returns a non-empty answer.
+- The accepted DSB retrieval prompt
+  `Nutze Tessera tools. Welcher Mindestimpuls ist fuer 9 mm Luger vorgeschrieben?`
+  makes the model choose a Tessera search tool and returns the 9 mm Luger
+  Mindestimpuls value `250`.
+
+The Tessera system instructions make tool selection capability-driven: the
+model is told to inspect the available tool names, descriptions, and argument
+schemas as its capability catalog before choosing a tool. This keeps retrieval
+selection inside the model/tool loop without hardcoded Swift-side orchestration.
+
+The CLI must not compensate for model-specific tool-selection weaknesses by
+hardcoding retrieval, bypassing the Tessera MCP client, or hiding retrieval
+orchestration outside model-selected tool calls.
 
 The CLI flushes stdout after the question and availability lines so framework
 stderr output from Foundation Models does not reorder the user-visible status

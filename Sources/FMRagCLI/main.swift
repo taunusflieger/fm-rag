@@ -61,9 +61,7 @@ private func answer(_ command: CLIArguments.Command) async {
             fflush(stdout)
 
             let modelURL = URL(fileURLWithPath: modelPath, isDirectory: true)
-            let model = try await ToolCallingCoreAIModel(
-                base: CoreAILanguageModel(resourcesAt: modelURL)
-            )
+            let model = try await CoreAILanguageModel(resourcesAt: modelURL)
             let session = LanguageModelSession(
                 model: model,
                 tools: tools,
@@ -83,52 +81,6 @@ private func answer(_ command: CLIArguments.Command) async {
         }
         fputs("\(errorPrefix): \(error)\n", stderr)
         exit(1)
-    }
-}
-
-private struct ToolCallingCoreAIModel: LanguageModel {
-    typealias Executor = ToolCallingCoreAIExecutor
-
-    let base: CoreAILanguageModel
-
-    // The exported Qwen3 tokenizer advertises tool-call syntax, but the local
-    // Core AI adapter does not currently surface that through FoundationModels.
-    var capabilities: LanguageModelCapabilities {
-        var capabilities: [LanguageModelCapabilities.Capability] = [.toolCalling]
-        if base.capabilities.contains(.guidedGeneration) {
-            capabilities.append(.guidedGeneration)
-        }
-        if base.capabilities.contains(.reasoning) {
-            capabilities.append(.reasoning)
-        }
-        return LanguageModelCapabilities(capabilities: capabilities)
-    }
-
-    var executorConfiguration: CoreAILanguageModel.CoreAIExecutor.Configuration {
-        base.executorConfiguration
-    }
-}
-
-private struct ToolCallingCoreAIExecutor: LanguageModelExecutor {
-    typealias Configuration = CoreAILanguageModel.CoreAIExecutor.Configuration
-    typealias Model = ToolCallingCoreAIModel
-
-    private let base: CoreAILanguageModel.CoreAIExecutor
-
-    init(configuration: Configuration) throws {
-        base = try CoreAILanguageModel.CoreAIExecutor(configuration: configuration)
-    }
-
-    func prewarm(model: ToolCallingCoreAIModel, transcript: Transcript) {
-        try? base.prewarm(transcript: transcript)
-    }
-
-    func respond(
-        to request: LanguageModelExecutorGenerationRequest,
-        model: ToolCallingCoreAIModel,
-        streamingInto channel: LanguageModelExecutorGenerationChannel
-    ) async throws {
-        try await base.respond(to: request, model: model.base, streamingInto: channel)
     }
 }
 

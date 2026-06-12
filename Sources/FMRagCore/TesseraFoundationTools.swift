@@ -75,7 +75,7 @@ public enum TesseraFoundationToolFactory {
 
 struct ListSourcesTool: Tool {
     let name = "list_sources"
-    let description = "Returns configured rule sources with source metadata, status, available filter facets, and configuration errors."
+    let description = "Discover configured sources, source metadata, available filter facets, status, and configuration errors. Use this to understand what collections and filters exist; it does not search document content."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -96,7 +96,7 @@ struct ListSourcesTool: Tool {
 
 struct SearchRulesTool: Tool {
     let name = "search_rules"
-    let description = "Semantic or hybrid search over rules for intent-oriented queries."
+    let description = "Search rule and knowledge text by meaning for intent-oriented questions. Use this when the user asks in natural language and you need relevant passages before deciding whether more specific lookup is needed."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -151,7 +151,7 @@ struct SearchRulesTool: Tool {
 
 struct SearchExactTool: Tool {
     let name = "search_exact"
-    let description = "Full-text (FTS5/BM25) search for exact terms or phrases."
+    let description = "Search indexed text for exact words or phrases with FTS5/BM25. Use this when the user supplies distinctive terms, identifiers, names, calibers, or quoted phrases that should appear literally."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -203,7 +203,7 @@ struct SearchExactTool: Tool {
 
 struct SearchIdentifiersTool: Tool {
     let name = "search_identifiers"
-    let description = "Search by requirement IDs, discipline numbers, or technical prefixes."
+    let description = "Search by requirement IDs, discipline numbers, rule numbers, or technical prefixes. Use this when the user gives a structured identifier rather than a prose question."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -264,7 +264,7 @@ struct SearchIdentifiersTool: Tool {
 
 struct CountIdentifiersTool: Tool {
     let name = "count_identifiers"
-    let description = "Count identifiers in the index under optional metadata filters."
+    let description = "Count identifiers in the index under optional metadata filters. Use this for quantitative questions about how many IDs exist, not for finding answer passages."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -323,7 +323,7 @@ struct CountIdentifiersTool: Tool {
 
 struct CountTextMatchesTool: Tool {
     let name = "count_text_matches"
-    let description = "Count how often a term or phrase appears in the indexed text."
+    let description = "Count how often a term or phrase appears in indexed text. Use this for frequency questions, not for answering what a rule says."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -378,7 +378,7 @@ struct CountTextMatchesTool: Tool {
 
 struct SearchTablesTool: Tool {
     let name = "search_tables"
-    let description = "Search candidate table artifacts by caption, header, cell, or table text. Use open_table before final answers that depend on concrete rows, cells, row sets, or column relationships."
+    let description = "Search table artifacts by caption, header, cell, or table text. Use this when the answer may be in a table, especially concrete values, rows, columns, calibers, measurements, limits, or mappings. Use open_table before final answers that depend on table rows or cells."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -430,7 +430,7 @@ struct SearchTablesTool: Tool {
 
 struct OpenChunkTool: Tool {
     let name = "open_chunk"
-    let description = "Retrieve one indexed text chunk by its chunk ID."
+    let description = "Retrieve one indexed text chunk by chunk ID returned from a prior search. Use this to inspect the full evidence behind a summarized text hit."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -454,7 +454,7 @@ struct OpenChunkTool: Tool {
 
 struct OpenTableTool: Tool {
     let name = "open_table"
-    let description = "Retrieve one indexed table by table ID. This is the canonical verifier for table-row and table-cell evidence."
+    let description = "Retrieve one indexed table by table ID returned from a prior table search. This is the canonical verifier for table-row and table-cell evidence."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -487,7 +487,7 @@ struct OpenTableTool: Tool {
 
 struct GetContextTool: Tool {
     let name = "get_context"
-    let description = "Retrieve neighbouring chunks before and after a known chunk ID."
+    let description = "Retrieve neighbouring chunks before and after a known chunk ID. Use this when a search hit needs surrounding context before answering."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -520,7 +520,7 @@ struct GetContextTool: Tool {
 
 struct FindRuleNumberTool: Tool {
     let name = "find_rule_number"
-    let description = "Find structural rule or section numbers across all indexed sources."
+    let description = "Find structural rule or section numbers across all indexed sources. Use this when the user asks for or provides a rule number, section number, or structural location."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -572,7 +572,7 @@ struct FindRuleNumberTool: Tool {
 
 struct TraceRequirementTool: Tool {
     let name = "trace_requirement"
-    let description = "Trace upstream and downstream links for a requirement ID or chunk ID."
+    let description = "Trace upstream and downstream links for a requirement ID or chunk ID. Use this for dependency, provenance, or relationship questions after an ID is known."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {
@@ -631,7 +631,7 @@ struct TraceRequirementTool: Tool {
 
 struct FindModuleTool: Tool {
     let name = "find_module"
-    let description = "Find DIM module names by name search."
+    let description = "Find DIM module names by name search. Use this only for module-name lookup questions."
     let executor: TesseraToolExecutor
 
     init(client: TesseraMCPClient, trace: ToolCallTrace) {

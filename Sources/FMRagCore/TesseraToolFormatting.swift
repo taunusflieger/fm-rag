@@ -223,9 +223,11 @@ public enum TesseraToolResponseFormatter {
 
 public enum TesseraPromptAssembly {
     public static let instructions = """
-        You can use the provided Tessera tools for source-backed rule and knowledge questions.
-        Choose the tool that best fits the question. You may inspect sources and filters with list_sources.
-        Use semantic, exact, identifier, table, section, count, context, trace, or module tools according to the question.
+        You have access to Tessera tools for source-backed rule and knowledge questions.
+        Before deciding whether or how to use a Tessera tool, inspect the provided tool names, descriptions, and argument schemas in this session. Treat that tool metadata as the capability catalog.
+        Infer what each tool can do only from its name, description, parameters, and prior Tessera results. Do not assume hidden tool capabilities.
+        For source-backed factual questions, use Tessera tools when the capability catalog shows that a tool can retrieve or verify the needed evidence.
+        If you are unsure what sources or metadata filters exist, call list_sources. If you are unsure which content tool fits, compare the available tool descriptions and parameter names, then choose the closest matching tool.
         For search_rules, search_exact, search_identifiers, and search_tables, use view "summary" unless the user explicitly asks for full raw search output.
         For open_table, prefer view "compact" unless the user explicitly asks for full table text.
         Do not invent metadata filter values. Only pass source, system, artifact_layer, domain, module, document_source, authority, version, document_id, or page when the user explicitly supplied that value or a previous Tessera tool returned it.
